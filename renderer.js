@@ -1,9 +1,12 @@
 // ===== ১. দরকারি মডিউল =====
 const fs = require('fs');     // ফাইল পড়া ও লেখার জন্য
 const path = require('path'); // ফাইলের ঠিকানা বানানোর জন্য
+const crypto = require('crypto'); // পাসওয়ার্ড হ্যাশ (সুরক্ষিত) করার জন্য
 
 // ডাটা সেভ হবে এই ফাইলে
 const DATA_FILE = path.join(__dirname, 'students.json');
+// অ্যাডমিনের ইউজারনেম ও পাসওয়ার্ডের হ্যাশ থাকবে এই ফাইলে
+const ADMIN_FILE = path.join(__dirname, 'admin.json');
 
 // ডিপার্টমেন্ট ও সেমিস্টারের তালিকা (চাইলে নিজের মতো বদলাতে পারবে)
 const DEPARTMENTS = ['CSE', 'EEE', 'Civil', 'Mechanical', 'BBA', 'English'];
@@ -38,6 +41,19 @@ const countBadge = document.getElementById('count');
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modal-body');
 const modalClose = document.getElementById('modal-close');
+
+// লগইন সংক্রান্ত এলিমেন্ট
+const loginScreen = document.getElementById('login-screen');
+const appScreen = document.getElementById('app-screen');
+const loginForm = document.getElementById('login-form');
+const loginUser = document.getElementById('loginUser');
+const loginPass = document.getElementById('loginPass');
+const loginPass2 = document.getElementById('loginPass2');
+const confirmField = document.getElementById('confirm-field');
+const loginSubtitle = document.getElementById('login-subtitle');
+const loginError = document.getElementById('login-error');
+const loginBtn = document.getElementById('login-btn');
+const logoutBtn = document.getElementById('logout-btn');
 
 // ===== ৪. ফাইল থেকে ডাটা পড়া ও ফাইলে ডাটা লেখা =====
 function loadStudents() {
@@ -309,7 +325,118 @@ tableBody.addEventListener('click', function (event) {
   if (action === 'delete') deleteStudent(id);
 });
 
-// ===== ১১. অ্যাপ চালু হলে যা যা হবে =====
+// ===== ১১. লগইন সিস্টেম =====
+
+// পাসওয়ার্ডকে এমন এক দুর্বোধ্য কোডে (hash) বদলায়, যা থেকে আসল পাসওয়ার্ড ফেরত পাওয়া যায় না
+// salt হলো একটা এলোমেলো লেখা, যেটা মেশালে একই পাসওয়ার্ডেরও আলাদা hash হয়
+function hashPassword(password, salt) {
+  return crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+}
+
+// admin.json থেকে অ্যাডমিনের তথ্য পড়া (ফাইল না থাকলে null)
+function loadAdmin() {
+  try {
+    if (fs.existsSync(ADMIN_FILE)) {
+      return JSON.parse(fs.readFileSync(ADMIN_FILE, 'utf-8'));
+    }
+  } catch (error) {
+    console.error('Could not read admin file:', error);
+  }
+  return null;
+}
+
+// নতুন অ্যাডমিন তৈরি: পাসওয়ার্ড নয়, শুধু তার hash ফাইলে সেভ হয়
+function saveAdmin(username, password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const data = { username: username, salt: salt, hash: hashPassword(password, salt) };
+  fs.writeFileSync(ADMIN_FILE, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+// ইউজারনেম ও পাসওয়ার্ড মেলানো
+function checkLogin(username, password) {
+  const admin = loadAdmin();
+  if (admin === null) return false;
+  return username === admin.username && hashPassword(password, admin.salt) === admin.hash;
+}
+
+// লগইন পর্দা দেখানো (admin.json না থাকলে "অ্যাকাউন্ট তৈরি" মোডে)
+function showLoginScreen() {
+  const isSetup = loadAdmin() === null;
+
+  loginSubtitle.textContent = isSetup ? 'First time setup: create admin account' : 'Admin Login';
+  confirmField.classList.toggle('hidden', !isSetup);
+  loginBtn.textContent = isSetup ? 'Create Account' : 'Login';
+  loginForm.reset();
+  loginError.textContent = '';
+
+  appScreen.classList.add('hidden');
+  loginScreen.classList.remove('hidden');
+  loginUser.focus();
+}
+
+// লগইন সফল হলে মূল অ্যাপ চালু করা
+function startApp() {
+  loginScreen.classList.add('hidden');
+  appScreen.classList.remove('hidden');
+
+  clearForm();
+  searchInput.value = '';
+  filterDept.value = '';
+  loadStudents();
+  renderTable();
+}
+
+// Login / Create Account বাটন চাপলে
+function handleLogin(event) {
+  event.preventDefault();
+
+  const username = loginUser.value.trim();
+  const password = loginPass.value;
+  const isSetup = loadAdmin() === null;
+
+  if (username === '' || password === '') {
+    loginError.textContent = 'Please enter username and password.';
+    return;
+  }
+
+  if (isSetup) {
+    // নতুন অ্যাকাউন্ট তৈরি
+    if (username.length < 3) {
+      loginError.textContent = 'Username must be at least 3 characters.';
+      return;
+    }
+    if (password.length < 4) {
+      loginError.textContent = 'Password must be at least 4 characters.';
+      return;
+    }
+    if (password !== loginPass2.value) {
+      loginError.textContent = 'Passwords do not match.';
+      return;
+    }
+    saveAdmin(username, password);
+    startApp();
+  } else {
+    // সাধারণ লগইন
+    if (checkLogin(username, password)) {
+      startApp();
+    } else {
+      loginError.textContent = 'Wrong username or password.';
+      loginPass.value = '';
+    }
+  }
+}
+
+// Logout চাপলে ডাটা ও পপ-আপ লুকিয়ে আবার লগইন পর্দা
+function handleLogout() {
+  students = [];
+  tableBody.innerHTML = '';
+  modal.classList.add('hidden');
+  showLoginScreen();
+}
+
+loginForm.addEventListener('submit', handleLogin);
+logoutBtn.addEventListener('click', handleLogout);
+
+// ===== ১২. অ্যাপ চালু হলে যা যা হবে =====
 fillSelects();
-loadStudents();
-renderTable();
+showLoginScreen(); // আগে লগইন পর্দা, লগইন করলে তবেই ডাটা লোড হবে

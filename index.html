@@ -7,7 +7,40 @@
 </head>
 <body>
 
+  <!-- ===== লগইন পর্দা ===== -->
+  <div id="login-screen" class="login-screen hidden">
+    <div class="login-card">
+      <h1>Student Management System</h1>
+      <p id="login-subtitle" class="login-subtitle">Admin Login</p>
+
+      <form id="login-form">
+        <div class="field">
+          <label for="loginUser">Username</label>
+          <input type="text" id="loginUser" placeholder="Enter username" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label for="loginPass">Password</label>
+          <input type="password" id="loginPass" placeholder="Enter password">
+        </div>
+
+        <div class="field hidden" id="confirm-field">
+          <label for="loginPass2">Confirm Password</label>
+          <input type="password" id="loginPass2" placeholder="Enter password again">
+        </div>
+
+        <p id="login-error" class="error"></p>
+
+        <button type="submit" id="login-btn" class="btn primary full">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== মূল অ্যাপ (লগইন করলে তবেই দেখা যাবে) ===== -->
+  <div id="app-screen" class="hidden">
+
   <header>
+    <button id="logout-btn" class="logout-btn">Logout</button>
     <h1>Student Management System</h1>
     <p>Manage student records easily and quickly</p>
   </header>
@@ -107,6 +140,8 @@
       <button id="modal-close" class="btn primary">Close</button>
     </div>
   </div>
+
+  </div> <!-- app-screen শেষ -->
 
   <script src="renderer.js"></script>
 </body>

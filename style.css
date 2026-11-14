@@ -196,6 +196,70 @@ tr:hover td {
   padding: 20px;
 }
 
+/* লগইন পর্দা */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  width: 400px;
+  max-width: 100%;
+  padding: 32px 28px;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.login-card h1 {
+  font-size: 22px;
+  text-align: center;
+  color: #1e293b;
+}
+
+.login-subtitle {
+  text-align: center;
+  color: #64748b;
+  margin: 6px 0 22px;
+  font-size: 14px;
+}
+
+.login-card .field {
+  margin-bottom: 14px;
+}
+
+.btn.full {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* হেডারের Logout বাটন */
+header {
+  position: relative;
+}
+
+.logout-btn {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 /* ছবি */
 .photo-preview {
   display: block;
