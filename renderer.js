@@ -55,6 +55,12 @@ const loginError = document.getElementById('login-error');
 const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 
+// থিম (Dark / Light) ও পরিসংখ্যানের এলিমেন্ট
+const themeBtn = document.getElementById('theme-btn');
+const statTotal = document.getElementById('stat-total');
+const statDepts = document.getElementById('stat-depts');
+const statLatest = document.getElementById('stat-latest');
+
 // ===== ৪. ফাইল থেকে ডাটা পড়া ও ফাইলে ডাটা লেখা =====
 function loadStudents() {
   try {
@@ -146,6 +152,19 @@ function clearForm() {
   cancelBtn.classList.add('hidden');
 }
 
+// ===== ৬.৫ পরিসংখ্যান (ওপরের তিনটি কার্ড) =====
+function updateStats() {
+  // মোট স্টুডেন্ট (সার্চ বা ফিল্টারে বদলায় না)
+  statTotal.textContent = students.length;
+
+  // কয়টি আলাদা ডিপার্টমেন্টে স্টুডেন্ট আছে (Set একই জিনিস দুইবার রাখে না)
+  const deptSet = new Set(students.map(function (s) { return s.department; }));
+  statDepts.textContent = deptSet.size;
+
+  // সবশেষ যোগ করা স্টুডেন্টের নাম
+  statLatest.textContent = students.length > 0 ? students[students.length - 1].name : '-';
+}
+
 // ===== ৭. টেবিল আঁকা (সার্চ ও ফিল্টারসহ) =====
 function renderTable() {
   const keyword = searchInput.value.trim().toLowerCase();
@@ -161,6 +180,7 @@ function renderTable() {
   });
 
   countBadge.textContent = result.length;
+  updateStats();
   tableBody.innerHTML = '';
   emptyMsg.classList.toggle('hidden', result.length > 0);
 
@@ -430,6 +450,7 @@ function handleLogin(event) {
 function handleLogout() {
   students = [];
   tableBody.innerHTML = '';
+  updateStats();
   modal.classList.add('hidden');
   showLoginScreen();
 }
@@ -437,6 +458,36 @@ function handleLogout() {
 loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
 
-// ===== ১২. অ্যাপ চালু হলে যা যা হবে =====
+// ===== ১২. Dark / Light থিম =====
+// বেছে নেওয়া থিম localStorage-এ জমা থাকে, তাই অ্যাপ বন্ধ করে খুললেও মনে থাকে
+function applyTheme(theme) {
+  document.body.classList.toggle('dark', theme === 'dark');
+  themeBtn.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+}
+
+function loadTheme() {
+  let theme = 'light';
+  try {
+    theme = localStorage.getItem('theme') || 'light';
+  } catch (error) {
+    console.error('Could not read theme:', error);
+  }
+  applyTheme(theme);
+}
+
+function toggleTheme() {
+  const next = document.body.classList.contains('dark') ? 'light' : 'dark';
+  applyTheme(next);
+  try {
+    localStorage.setItem('theme', next);
+  } catch (error) {
+    console.error('Could not save theme:', error);
+  }
+}
+
+themeBtn.addEventListener('click', toggleTheme);
+
+// ===== ১৩. অ্যাপ চালু হলে যা যা হবে =====
+loadTheme();           // আগে থিম বসাও, যাতে লগইন পর্দাও ঠিক রঙে আসে
 fillSelects();
 showLoginScreen(); // আগে লগইন পর্দা, লগইন করলে তবেই ডাটা লোড হবে

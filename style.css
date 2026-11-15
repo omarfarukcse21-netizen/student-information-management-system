@@ -1,3 +1,50 @@
+/* ===== রং (Light ও Dark মোডের জন্য আলাদা মান) ===== */
+:root {
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --input-border: #cbd5e1;
+  --input-bg: #ffffff;
+  --th-bg: #f8fafc;
+  --row-hover: #f8fafc;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #e0e7ff;
+  --accent-ring: rgba(79, 70, 229, 0.18);
+  --secondary-bg: #e2e8f0;
+  --secondary-text: #1e293b;
+  --shadow: 0 2px 12px rgba(15, 23, 42, 0.08);
+  --header-from: #1d4ed8;
+  --header-to: #4f46e5;
+  --error: #dc2626;
+}
+
+/* body-তে dark ক্লাস থাকলে এই রংগুলো বসে যায় */
+body.dark {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #334155;
+  --input-border: #475569;
+  --input-bg: #0f172a;
+  --th-bg: #172033;
+  --row-hover: #26344a;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-soft: #312e81;
+  --accent-ring: rgba(129, 140, 248, 0.25);
+  --secondary-bg: #334155;
+  --secondary-text: #e2e8f0;
+  --shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+  --header-from: #1e3a8a;
+  --header-to: #3730a3;
+  --error: #f87171;
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -6,43 +53,118 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-  background: #f1f5f9;
-  color: #1e293b;
+  background: var(--bg);
+  color: var(--text);
 }
 
+/* ===== হেডার ===== */
 header {
-  background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+  position: relative;
+  background: linear-gradient(135deg, var(--header-from), var(--header-to));
   color: white;
   text-align: center;
-  padding: 24px 10px;
+  padding: 30px 10px 34px;
 }
 
 header h1 {
-  font-size: 28px;
+  font-size: 30px;
+  letter-spacing: 0.3px;
 }
 
 header p {
-  margin-top: 6px;
-  opacity: 0.85;
+  margin-top: 8px;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.header-actions {
+  position: absolute;
+  right: 20px;
+  top: 18px;
+  display: flex;
+  gap: 8px;
+}
+
+.header-btn {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.header-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 main {
   max-width: 1050px;
-  margin: 24px auto;
+  margin: 0 auto 28px;
   padding: 0 16px;
 }
 
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 22px;
+/* ===== পরিসংখ্যানের কার্ড ===== */
+.stats {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: -22px;
   margin-bottom: 22px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+  border-left: 5px solid var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-value.small {
+  font-size: 18px;
+  line-height: 1.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== কার্ড ===== */
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow);
 }
 
 .card h2 {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   font-size: 20px;
+  padding-left: 12px;
+  border-left: 4px solid var(--accent);
 }
 
 /* ফর্মের ঘরগুলো ৩ কলামে সাজানো */
@@ -57,29 +179,38 @@ main {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 5px;
+  color: var(--muted);
 }
 
 input, select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--input-border);
   border-radius: 8px;
   font-size: 14px;
   outline: none;
+  background: var(--input-bg);
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
 }
 
 input:focus, select:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 input:disabled {
-  background: #e2e8f0;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
 .error {
-  color: #dc2626;
+  color: var(--error);
   font-size: 14px;
   margin-top: 12px;
   min-height: 18px;
@@ -92,35 +223,46 @@ input:disabled {
 }
 
 .btn {
-  padding: 10px 20px;
+  padding: 10px 22px;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 .btn.primary {
-  background: #4f46e5;
+  background: var(--accent);
   color: white;
 }
 
 .btn.primary:hover {
-  background: #4338ca;
+  background: var(--accent-hover);
 }
 
 .btn.secondary {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--secondary-bg);
+  color: var(--secondary-text);
 }
 
+.btn.full {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* ===== তালিকা ===== */
 .list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .list-header h2 {
@@ -128,7 +270,7 @@ input:disabled {
 }
 
 .badge {
-  background: #4f46e5;
+  background: var(--accent);
   color: white;
   font-size: 13px;
   padding: 2px 10px;
@@ -161,29 +303,36 @@ table {
 th, td {
   padding: 12px 10px;
   text-align: left;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   font-size: 14px;
 }
 
 th {
-  background: #f8fafc;
-  font-size: 13px;
+  background: var(--th-bg);
+  font-size: 12px;
   text-transform: uppercase;
-  color: #475569;
+  letter-spacing: 0.5px;
+  color: var(--muted);
 }
 
 tr:hover td {
-  background: #f8fafc;
+  background: var(--row-hover);
 }
 
 .action-btn {
-  padding: 5px 10px;
+  padding: 6px 11px;
   border: none;
   border-radius: 6px;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
   margin-right: 4px;
   color: white;
+  transition: opacity 0.2s;
+}
+
+.action-btn:hover {
+  opacity: 0.85;
 }
 
 .view-btn   { background: #0ea5e9; }
@@ -192,38 +341,37 @@ tr:hover td {
 
 .empty {
   text-align: center;
-  color: #64748b;
-  padding: 20px;
+  color: var(--muted);
+  padding: 22px;
 }
 
-/* লগইন পর্দা */
+/* ===== লগইন পর্দা ===== */
 .login-screen {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+  background: linear-gradient(135deg, var(--header-from), var(--header-to));
   padding: 20px;
 }
 
 .login-card {
-  background: white;
+  background: var(--card);
   width: 400px;
   max-width: 100%;
   padding: 32px 28px;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
 }
 
 .login-card h1 {
   font-size: 22px;
   text-align: center;
-  color: #1e293b;
 }
 
 .login-subtitle {
   text-align: center;
-  color: #64748b;
+  color: var(--muted);
   margin: 6px 0 22px;
   font-size: 14px;
 }
@@ -232,35 +380,7 @@ tr:hover td {
   margin-bottom: 14px;
 }
 
-.btn.full {
-  width: 100%;
-  margin-top: 8px;
-}
-
-/* হেডারের Logout বাটন */
-header {
-  position: relative;
-}
-
-.logout-btn {
-  position: absolute;
-  right: 20px;
-  top: 20px;
-  padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* ছবি */
+/* ===== ছবি ===== */
 .photo-preview {
   display: block;
   width: 70px;
@@ -268,7 +388,7 @@ header {
   object-fit: cover;
   border-radius: 8px;
   margin-top: 8px;
-  border: 2px solid #c7d2fe;
+  border: 2px solid var(--accent-soft);
 }
 
 .thumb {
@@ -276,7 +396,7 @@ header {
   height: 42px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #c7d2fe;
+  border: 2px solid var(--accent-soft);
   display: block;
 }
 
@@ -284,8 +404,8 @@ header {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #e0e7ff;
-  color: #4338ca;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -297,26 +417,28 @@ header {
   height: 110px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #c7d2fe;
+  border: 3px solid var(--accent-soft);
   display: block;
   margin: 0 auto 14px;
 }
 
-/* পপ-আপ */
+/* ===== পপ-আপ ===== */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .modal-box {
-  background: white;
+  background: var(--card);
+  color: var(--text);
   padding: 26px;
-  border-radius: 12px;
+  border-radius: 14px;
   width: 400px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.35);
 }
 
 .modal-box h2 {
@@ -326,14 +448,15 @@ header {
 .detail-row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #e2e8f0;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
   font-size: 14px;
 }
 
 .detail-row span:first-child {
   font-weight: 600;
-  color: #475569;
+  color: var(--muted);
 }
 
 .modal-box .btn {

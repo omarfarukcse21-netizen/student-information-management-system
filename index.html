@@ -40,12 +40,31 @@
   <div id="app-screen" class="hidden">
 
   <header>
-    <button id="logout-btn" class="logout-btn">Logout</button>
+    <div class="header-actions">
+      <button id="theme-btn" class="header-btn">Dark Mode</button>
+      <button id="logout-btn" class="header-btn">Logout</button>
+    </div>
     <h1>Student Management System</h1>
     <p>Manage student records easily and quickly</p>
   </header>
 
   <main>
+
+    <!-- পরিসংখ্যান -->
+    <section class="stats">
+      <div class="stat-card">
+        <span class="stat-label">Total Students</span>
+        <span class="stat-value" id="stat-total">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Departments</span>
+        <span class="stat-value" id="stat-depts">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Last Added</span>
+        <span class="stat-value small" id="stat-latest">-</span>
+      </div>
+    </section>
 
     <!-- ফর্ম: নতুন স্টুডেন্ট যোগ / এডিট -->
     <section class="card">
