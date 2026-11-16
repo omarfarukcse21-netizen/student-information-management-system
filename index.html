@@ -126,6 +126,7 @@
         <div class="search-box">
           <input type="text" id="searchInput" placeholder="Search by ID or Name...">
           <select id="filterDept"></select>
+          <button id="export-btn" class="btn primary">Export PDF</button>
         </div>
       </div>
 
@@ -156,9 +157,14 @@
     <div class="modal-box">
       <h2>Student Details</h2>
       <div id="modal-body"></div>
-      <button id="modal-close" class="btn primary">Close</button>
+      <div class="modal-actions">
+        <button id="modal-pdf" class="btn secondary">Download PDF</button>
+        <button id="modal-close" class="btn primary">Close</button>
+      </div>
     </div>
   </div>
+
+  <div id="toast" class="toast hidden"></div>
 
   </div> <!-- app-screen শেষ -->
 

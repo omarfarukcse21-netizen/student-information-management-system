@@ -2,6 +2,7 @@
 const fs = require('fs');     // ফাইল পড়া ও লেখার জন্য
 const path = require('path'); // ফাইলের ঠিকানা বানানোর জন্য
 const crypto = require('crypto'); // পাসওয়ার্ড হ্যাশ (সুরক্ষিত) করার জন্য
+const { ipcRenderer } = require('electron'); // main.js-কে PDF বানানোর অনুরোধ পাঠানোর জন্য
 
 // ডাটা সেভ হবে এই ফাইলে
 const DATA_FILE = path.join(__dirname, 'students.json');
@@ -16,6 +17,9 @@ const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 let students = [];     // সব স্টুডেন্টের তালিকা এখানে থাকবে
 let editingId = null;  // এডিট চললে কোন ID এডিট হচ্ছে সেটা এখানে থাকবে
 let currentPhoto = ''; // বাছাই করা ছবির (ছোট করা) ডাটা এখানে থাকবে
+let viewingId = null;  // View পপ-আপে এখন কার তথ্য দেখাচ্ছে
+let isExporting = false; // PDF বানানো চলছে কিনা (দুইবার চাপা আটকাতে)
+let toastTimer = null;
 
 // ===== ৩. HTML-এর এলিমেন্টগুলো ধরা =====
 const form = document.getElementById('student-form');
@@ -41,6 +45,9 @@ const countBadge = document.getElementById('count');
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modal-body');
 const modalClose = document.getElementById('modal-close');
+const modalPdf = document.getElementById('modal-pdf');
+const exportBtn = document.getElementById('export-btn');
+const toast = document.getElementById('toast');
 
 // লগইন সংক্রান্ত এলিমেন্ট
 const loginScreen = document.getElementById('login-screen');
@@ -166,18 +173,23 @@ function updateStats() {
 }
 
 // ===== ৭. টেবিল আঁকা (সার্চ ও ফিল্টারসহ) =====
-function renderTable() {
+// সার্চ ও ফিল্টারের শর্ত মিলিয়ে যাদের এখন তালিকায় দেখানো উচিত তাদের বের করে
+// (টেবিল আঁকা এবং PDF বানানো, দুই কাজেই এটা ব্যবহার হয়)
+function getFilteredStudents() {
   const keyword = searchInput.value.trim().toLowerCase();
   const dept = filterDept.value;
 
-  // শর্ত মিললে তবেই স্টুডেন্ট তালিকায় থাকবে
-  const result = students.filter(function (s) {
+  return students.filter(function (s) {
     const matchText =
       s.id.toLowerCase().includes(keyword) ||
       s.name.toLowerCase().includes(keyword);
     const matchDept = dept === '' || s.department === dept;
     return matchText && matchDept;
   });
+}
+
+function renderTable() {
+  const result = getFilteredStudents();
 
   countBadge.textContent = result.length;
   updateStats();
@@ -266,6 +278,7 @@ function findStudent(id) {
 
 function viewStudent(id) {
   const s = findStudent(id);
+  viewingId = id;
   const photoHtml = s.photo ? `<img class="modal-photo" src="${s.photo}" alt="photo">` : '';
   modalBody.innerHTML = `
     ${photoHtml}
@@ -457,6 +470,159 @@ function handleLogout() {
 
 loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
+
+// ===== ১১.৫ PDF এক্সপোর্ট =====
+
+// PDF-এর ডিজাইন (সবসময় সাদা পাতায়, Dark Mode-এ থাকলেও)
+const PDF_STYLE = `
+  @page { size: A4; margin: 14mm 12mm 18mm 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; color: #1e293b; font-size: 11px; margin: 0; }
+  .head { background: #4f46e5; color: white; padding: 16px 20px; border-radius: 8px; }
+  .head h1 { margin: 0; font-size: 22px; }
+  .head p { margin: 4px 0 0; font-size: 12px; opacity: 0.9; }
+  .meta { margin: 12px 0 10px; font-size: 11px; color: #475569; line-height: 1.7; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { display: table-header-group; }
+  th { background: #e0e7ff; color: #3730a3; text-align: left; font-size: 10px;
+       text-transform: uppercase; padding: 7px 6px; }
+  td { padding: 6px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; word-break: break-word; }
+  tr { page-break-inside: avoid; }
+  tbody tr:nth-child(even) td { background: #f8fafc; }
+  .ph { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; display: block; }
+  .av { width: 30px; height: 30px; border-radius: 50%; background: #e0e7ff; color: #4f46e5;
+        font-weight: 700; text-align: center; line-height: 30px; }
+  .profile { text-align: center; margin: 22px 0 14px; }
+  .profile img { width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 4px solid #c7d2fe; }
+  .profile .big-av { width: 130px; height: 130px; border-radius: 50%; background: #e0e7ff; color: #4f46e5;
+        font-size: 52px; font-weight: 700; line-height: 130px; margin: 0 auto; }
+  .profile h2 { margin: 12px 0 2px; font-size: 22px; }
+  .profile p { margin: 0; color: #64748b; }
+  .details td { font-size: 13px; padding: 10px 8px; }
+  .details td:first-child { width: 32%; font-weight: 600; color: #475569; }
+`;
+
+// HTML-এর পাতার কাঠামো বানানোর সাহায্যকারী
+function pdfPage(title, body) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(title) +
+         '</title><style>' + PDF_STYLE + '</style></head><body>' + body + '</body></html>';
+}
+
+function nowText() {
+  return new Date().toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+}
+
+// তালিকার PDF (যে স্টুডেন্টরা এখন টেবিলে দেখা যাচ্ছে শুধু তারাই)
+function buildListHtml(list) {
+  const filters = [];
+  if (searchInput.value.trim() !== '') filters.push('Search: "' + escapeHtml(searchInput.value.trim()) + '"');
+  if (filterDept.value !== '') filters.push('Department: ' + escapeHtml(filterDept.value));
+
+  const rows = list.map(function (s, index) {
+    const photo = s.photo
+      ? '<img class="ph" src="' + escapeHtml(s.photo) + '">'
+      : '<div class="av">' + escapeHtml(s.name.charAt(0).toUpperCase()) + '</div>';
+    return '<tr>' +
+      '<td>' + (index + 1) + '</td>' +
+      '<td>' + photo + '</td>' +
+      '<td>' + escapeHtml(s.id) + '</td>' +
+      '<td>' + escapeHtml(s.name) + '</td>' +
+      '<td>' + escapeHtml(s.department) + '</td>' +
+      '<td>' + escapeHtml(s.semester) + '</td>' +
+      '<td>' + escapeHtml(s.phone || '-') + '</td>' +
+      '<td>' + escapeHtml(s.email || '-') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  const body =
+    '<div class="head"><h1>Student List</h1><p>Student Management System</p></div>' +
+    '<div class="meta">Generated on: ' + nowText() + '<br>' +
+    'Total students: <b>' + list.length + '</b>' +
+    (filters.length > 0 ? '<br>Filter: ' + filters.join(', ') : '') + '</div>' +
+    '<table><thead><tr><th>#</th><th>Photo</th><th>ID</th><th>Name</th><th>Dept</th>' +
+    '<th>Sem</th><th>Phone</th><th>Email</th></tr></thead><tbody>' + rows + '</tbody></table>';
+
+  return pdfPage('Student List', body);
+}
+
+// একজন স্টুডেন্টের প্রোফাইল PDF
+function buildProfileHtml(s) {
+  const photo = s.photo
+    ? '<img src="' + escapeHtml(s.photo) + '">'
+    : '<div class="big-av">' + escapeHtml(s.name.charAt(0).toUpperCase()) + '</div>';
+
+  const body =
+    '<div class="head"><h1>Student Profile</h1><p>Student Management System</p></div>' +
+    '<div class="profile">' + photo + '<h2>' + escapeHtml(s.name) + '</h2><p>ID: ' + escapeHtml(s.id) + '</p></div>' +
+    '<table class="details"><tbody>' +
+    '<tr><td>Student ID</td><td>' + escapeHtml(s.id) + '</td></tr>' +
+    '<tr><td>Full Name</td><td>' + escapeHtml(s.name) + '</td></tr>' +
+    '<tr><td>Department</td><td>' + escapeHtml(s.department) + '</td></tr>' +
+    '<tr><td>Semester</td><td>' + escapeHtml(s.semester) + '</td></tr>' +
+    '<tr><td>Phone</td><td>' + escapeHtml(s.phone || '-') + '</td></tr>' +
+    '<tr><td>Email</td><td>' + escapeHtml(s.email || '-') + '</td></tr>' +
+    '</tbody></table>' +
+    '<div class="meta" style="margin-top:20px;">Generated on: ' + nowText() + '</div>';
+
+  return pdfPage('Student Profile - ' + s.name, body);
+}
+
+// নিচের ডান কোণায় ছোট বার্তা দেখানো
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () {
+    toast.classList.add('hidden');
+  }, 5000);
+}
+
+// main.js-কে বলা: এই HTML থেকে PDF বানিয়ে দাও
+async function exportPdf(html, defaultName) {
+  if (isExporting) return;
+  isExporting = true;
+  exportBtn.disabled = true;
+  modalPdf.disabled = true;
+
+  try {
+    const result = await ipcRenderer.invoke('export-pdf', { html: html, defaultName: defaultName });
+    if (result.canceled) return; // ইউজার Cancel করেছে
+    if (result.ok) {
+      showToast('PDF saved: ' + result.path);
+    } else {
+      showToast('Could not create PDF: ' + result.error);
+    }
+  } catch (error) {
+    console.error('PDF export failed:', error);
+    showToast('Could not create PDF.');
+  } finally {
+    isExporting = false;
+    exportBtn.disabled = false;
+    modalPdf.disabled = false;
+  }
+}
+
+function handleExportList() {
+  const list = getFilteredStudents();
+  if (list.length === 0) {
+    showToast('No students to export.');
+    return;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  exportPdf(buildListHtml(list), 'Student_List_' + today + '.pdf');
+}
+
+function handleExportProfile() {
+  const s = findStudent(viewingId);
+  if (!s) return;
+  const safeId = s.id.replace(/[^A-Za-z0-9_-]/g, '_'); // ফাইলের নামে চলে না এমন চিহ্ন বাদ
+  exportPdf(buildProfileHtml(s), 'Student_' + safeId + '.pdf');
+}
+
+exportBtn.addEventListener('click', handleExportList);
+modalPdf.addEventListener('click', handleExportProfile);
 
 // ===== ১২. Dark / Light থিম =====
 // বেছে নেওয়া থিম localStorage-এ জমা থাকে, তাই অ্যাপ বন্ধ করে খুললেও মনে থাকে

@@ -1,5 +1,8 @@
 // Electron থেকে দরকারি দুটো জিনিস আনছি
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 // উইন্ডো তৈরির ফাংশন
 function createWindow() {
@@ -23,6 +26,55 @@ function createWindow() {
   // পেজ পুরো তৈরি হলে তবেই উইন্ডো দেখাবে (ঝলমলে ঝলক এড়াতে)
   win.once('ready-to-show', () => win.show());
 }
+
+// ===== PDF তৈরি =====
+// HTML লেখাকে একটি অদৃশ্য উইন্ডোতে লোড করে PDF বানিয়ে ফাইলে সেভ করে
+async function htmlToPdf(html, outputPath) {
+  // বড় HTML (অনেক ছবিসহ) সরাসরি না দিয়ে আগে একটি অস্থায়ী ফাইলে রাখি
+  const tmpFile = path.join(os.tmpdir(), 'student-export-' + Date.now() + '.html');
+  fs.writeFileSync(tmpFile, html, 'utf-8');
+
+  const pdfWin = new BrowserWindow({ show: false });
+  try {
+    await pdfWin.loadFile(tmpFile);
+    const data = await pdfWin.webContents.printToPDF({
+      printBackground: true,        // রং ও ব্যাকগ্রাউন্ড ছাপবে
+      preferCSSPageSize: true,      // পাতার মাপ HTML-এর @page থেকে নেবে
+      displayHeaderFooter: true,
+      headerTemplate: '<span></span>',
+      footerTemplate:
+        '<div style="width:100%; font-size:9px; color:#64748b; text-align:center;">' +
+        'Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
+    });
+    fs.writeFileSync(outputPath, data);
+  } finally {
+    pdfWin.destroy();
+    try { fs.unlinkSync(tmpFile); } catch (error) { /* অস্থায়ী ফাইল মোছা না গেলে সমস্যা নেই */ }
+  }
+}
+
+// renderer.js থেকে 'export-pdf' অনুরোধ এলে এই অংশ চলবে
+ipcMain.handle('export-pdf', async function (event, request) {
+  const parent = BrowserWindow.fromWebContents(event.sender);
+
+  // কোথায় সেভ করবে তা ইউজারকে জিজ্ঞেস করা
+  const choice = await dialog.showSaveDialog(parent, {
+    title: 'Save PDF',
+    defaultPath: path.join(app.getPath('documents'), request.defaultName),
+    filters: [{ name: 'PDF Document', extensions: ['pdf'] }]
+  });
+
+  if (choice.canceled || !choice.filePath) {
+    return { canceled: true };
+  }
+
+  try {
+    await htmlToPdf(request.html, choice.filePath);
+    return { ok: true, path: choice.filePath };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+});
 
 // Electron তৈরি হলে উইন্ডো খুলবে
 app.whenReady().then(() => {
