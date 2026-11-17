@@ -4,6 +4,14 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+// অ্যাপের লোগো: Windows-এ .ico সবচেয়ে ভালো দেখায়, অন্য সিস্টেমে .png
+const ICON_PATH = path.join(__dirname, process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+
+// Windows-এ টাস্কবারে Electron-এর ডিফল্ট আইকনের বদলে আমাদের লোগো দেখাতে এটা লাগে
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.student.management.system');
+}
+
 // উইন্ডো তৈরির ফাংশন
 function createWindow() {
   const win = new BrowserWindow({
@@ -12,6 +20,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'Student Management System',
+    icon: ICON_PATH,            // উইন্ডো ও টাস্কবারের লোগো
     backgroundColor: '#0f172a', // লোড হওয়ার সময় সাদা ঝলক এড়াতে
     show: false,                // তৈরি হওয়ার আগে উইন্ডো দেখাবে না
     webPreferences: {

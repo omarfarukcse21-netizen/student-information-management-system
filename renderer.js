@@ -61,6 +61,7 @@ const loginSubtitle = document.getElementById('login-subtitle');
 const loginError = document.getElementById('login-error');
 const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
+const showPass = document.getElementById('show-pass');
 
 // থিম (Dark / Light) ও পরিসংখ্যানের এলিমেন্ট
 const themeBtn = document.getElementById('theme-btn');
@@ -400,6 +401,8 @@ function showLoginScreen() {
   confirmField.classList.toggle('hidden', !isSetup);
   loginBtn.textContent = isSetup ? 'Create Account' : 'Login';
   loginForm.reset();
+  loginPass.type = 'password';   // Show password বন্ধ অবস্থায় ফিরিয়ে আনা
+  loginPass2.type = 'password';
   loginError.textContent = '';
 
   appScreen.classList.add('hidden');
@@ -467,6 +470,13 @@ function handleLogout() {
   modal.classList.add('hidden');
   showLoginScreen();
 }
+
+// Show password চেকবক্স: টিক দিলে পাসওয়ার্ড দেখা যায়, না দিলে ঢাকা থাকে
+showPass.addEventListener('change', function () {
+  const type = showPass.checked ? 'text' : 'password';
+  loginPass.type = type;
+  loginPass2.type = type;
+});
 
 loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
