@@ -135,6 +135,10 @@
         <span class="stat-value" id="stat-depts">0</span>
       </div>
       <div class="stat-card">
+        <span class="stat-label">Average CGPA</span>
+        <span class="stat-value" id="stat-cgpa">-</span>
+      </div>
+      <div class="stat-card">
         <span class="stat-label">Last Added</span>
         <span class="stat-value small" id="stat-latest">-</span>
       </div>
@@ -177,6 +181,16 @@
           </div>
 
           <div class="field">
+            <label for="bloodGroup">Blood Group</label>
+            <select id="bloodGroup"></select>
+          </div>
+
+          <div class="field">
+            <label for="cgpa">CGPA (0.00 - 4.00)</label>
+            <input type="number" id="cgpa" placeholder="e.g. 3.75" step="0.01" min="0" max="4">
+          </div>
+
+          <div class="field">
             <label for="photo">Photo</label>
             <input type="file" id="photo" accept="image/*">
             <img id="photo-preview" class="photo-preview hidden" alt="Preview">
@@ -200,6 +214,7 @@
         <div class="search-box">
           <input type="text" id="searchInput" placeholder="Search by ID or Name...">
           <select id="filterDept"></select>
+          <select id="filterBlood"></select>
           <button id="export-btn" class="btn primary">Export PDF</button>
         </div>
       </div>
@@ -213,6 +228,8 @@
               <th>Name</th>
               <th>Department</th>
               <th>Semester</th>
+              <th>CGPA</th>
+              <th>Blood</th>
               <th>Phone</th>
               <th>Actions</th>
             </tr>

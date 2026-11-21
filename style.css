@@ -19,6 +19,8 @@
   --header-from: #1d4ed8;
   --header-to: #4f46e5;
   --error: #dc2626;
+  --blood-bg: #fee2e2;
+  --blood-text: #b91c1c;
 }
 
 /* body-তে dark ক্লাস থাকলে এই রংগুলো বসে যায় */
@@ -42,6 +44,8 @@ body.dark {
   --header-from: #1e3a8a;
   --header-to: #3730a3;
   --error: #f87171;
+  --blood-bg: #4c1d24;
+  --blood-text: #fca5a5;
   color-scheme: dark;
 }
 
@@ -114,7 +118,7 @@ main {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-top: -22px;
   margin-bottom: 22px;
@@ -282,15 +286,28 @@ input:disabled {
 
 .search-box {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
 }
 
 .search-box input {
-  width: 260px;
+  width: 230px;
 }
 
 .search-box select {
-  width: 170px;
+  width: 160px;
+}
+
+/* রক্তের গ্রুপের ছোট লাল ব্যাজ */
+.blood {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: var(--blood-bg);
+  color: var(--blood-text);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .table-wrap {

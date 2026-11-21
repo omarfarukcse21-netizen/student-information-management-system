@@ -12,6 +12,7 @@ const ADMIN_FILE = path.join(__dirname, 'admin.json');
 // ডিপার্টমেন্ট ও সেমিস্টারের তালিকা (চাইলে নিজের মতো বদলাতে পারবে)
 const DEPARTMENTS = ['CSE', 'EEE', 'Civil', 'Mechanical', 'BBA', 'English'];
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 // ===== ২. গ্লোবাল ভেরিয়েবল =====
 let students = [];     // সব স্টুডেন্টের তালিকা এখানে থাকবে
@@ -29,6 +30,8 @@ const deptSelect = document.getElementById('department');
 const semSelect = document.getElementById('semester');
 const phoneInput = document.getElementById('phone');
 const emailInput = document.getElementById('email');
+const bloodSelect = document.getElementById('bloodGroup');
+const cgpaInput = document.getElementById('cgpa');
 const photoInput = document.getElementById('photo');
 const photoPreview = document.getElementById('photo-preview');
 const errorMsg = document.getElementById('error-msg');
@@ -38,6 +41,7 @@ const cancelBtn = document.getElementById('cancel-btn');
 
 const searchInput = document.getElementById('searchInput');
 const filterDept = document.getElementById('filterDept');
+const filterBlood = document.getElementById('filterBlood');
 const tableBody = document.getElementById('student-table-body');
 const emptyMsg = document.getElementById('empty-msg');
 const countBadge = document.getElementById('count');
@@ -68,6 +72,7 @@ const themeBtn = document.getElementById('theme-btn');
 const statTotal = document.getElementById('stat-total');
 const statDepts = document.getElementById('stat-depts');
 const statLatest = document.getElementById('stat-latest');
+const statCgpa = document.getElementById('stat-cgpa');
 
 // ===== ৪. ফাইল থেকে ডাটা পড়া ও ফাইলে ডাটা লেখা =====
 function loadStudents() {
@@ -101,6 +106,14 @@ function fillSelects() {
 
   SEMESTERS.forEach(function (s) {
     semSelect.innerHTML += `<option value="${s}">Semester ${s}</option>`;
+  });
+
+  // রক্তের গ্রুপ (ফর্মে ঐচ্ছিক, আর তালিকা ছাঁকার জন্য ফিল্টারেও আছে)
+  bloodSelect.innerHTML = '<option value="">Select blood group</option>';
+  filterBlood.innerHTML = '<option value="">All Blood Groups</option>';
+  BLOOD_GROUPS.forEach(function (b) {
+    bloodSelect.innerHTML += `<option value="${b}">${b}</option>`;
+    filterBlood.innerHTML += `<option value="${b}">${b}</option>`;
   });
 }
 
@@ -169,6 +182,17 @@ function updateStats() {
   const deptSet = new Set(students.map(function (s) { return s.department; }));
   statDepts.textContent = deptSet.size;
 
+  // গড় CGPA (যাদের CGPA দেওয়া আছে শুধু তাদের হিসাবে)
+  const cgpaList = students
+    .map(function (s) { return parseFloat(s.cgpa); })
+    .filter(function (v) { return !isNaN(v); });
+  if (cgpaList.length > 0) {
+    const sum = cgpaList.reduce(function (total, v) { return total + v; }, 0);
+    statCgpa.textContent = (sum / cgpaList.length).toFixed(2);
+  } else {
+    statCgpa.textContent = '-';
+  }
+
   // সবশেষ যোগ করা স্টুডেন্টের নাম
   statLatest.textContent = students.length > 0 ? students[students.length - 1].name : '-';
 }
@@ -179,13 +203,15 @@ function updateStats() {
 function getFilteredStudents() {
   const keyword = searchInput.value.trim().toLowerCase();
   const dept = filterDept.value;
+  const blood = filterBlood.value;
 
   return students.filter(function (s) {
     const matchText =
       s.id.toLowerCase().includes(keyword) ||
       s.name.toLowerCase().includes(keyword);
     const matchDept = dept === '' || s.department === dept;
-    return matchText && matchDept;
+    const matchBlood = blood === '' || s.bloodGroup === blood;
+    return matchText && matchDept && matchBlood;
   });
 }
 
@@ -209,6 +235,8 @@ function renderTable() {
       <td>${escapeHtml(s.name)}</td>
       <td>${escapeHtml(s.department)}</td>
       <td>${escapeHtml(s.semester)}</td>
+      <td>${escapeHtml(s.cgpa || '-')}</td>
+      <td>${s.bloodGroup ? '<span class="blood">' + escapeHtml(s.bloodGroup) + '</span>' : '-'}</td>
       <td>${escapeHtml(s.phone || '-')}</td>
       <td>
         <button class="action-btn view-btn" data-action="view" data-id="${escapeHtml(s.id)}">View</button>
@@ -230,6 +258,8 @@ function handleSubmit(event) {
   const semester = semSelect.value;
   const phone = phoneInput.value.trim();
   const email = emailInput.value.trim();
+  const bloodGroup = bloodSelect.value;
+  const cgpaText = cgpaInput.value.trim();
 
   // --- যাচাই (validation) ---
   if (id === '' || name === '' || department === '' || semester === '') {
@@ -247,6 +277,17 @@ function handleSubmit(event) {
     return;
   }
 
+  // CGPA ঐচ্ছিক, দিলে ০.০০ থেকে ৪.০০-র মধ্যে একটি সংখ্যা হতে হবে
+  let cgpa = '';
+  if (cgpaText !== '') {
+    const value = Number(cgpaText);
+    if (isNaN(value) || value < 0 || value > 4) {
+      showError('CGPA must be a number between 0.00 and 4.00.');
+      return;
+    }
+    cgpa = value.toFixed(2);
+  }
+
   if (editingId === null) {
     // নতুন স্টুডেন্ট: একই ID আগে থেকে থাকলে আটকাও
     const exists = students.some(function (s) {
@@ -256,13 +297,13 @@ function handleSubmit(event) {
       showError('This Student ID already exists.');
       return;
     }
-    students.push({ id, name, department, semester, phone, email, photo: currentPhoto });
+    students.push({ id, name, department, semester, phone, email, bloodGroup, cgpa, photo: currentPhoto });
   } else {
     // এডিট: ওই ID-র স্টুডেন্টকে খুঁজে তথ্য বদলাও
     const index = students.findIndex(function (s) {
       return s.id === editingId;
     });
-    students[index] = { id: editingId, name, department, semester, phone, email, photo: currentPhoto };
+    students[index] = { id: editingId, name, department, semester, phone, email, bloodGroup, cgpa, photo: currentPhoto };
   }
 
   saveStudents();
@@ -289,6 +330,8 @@ function viewStudent(id) {
     <div class="detail-row"><span>Semester</span><span>${escapeHtml(s.semester)}</span></div>
     <div class="detail-row"><span>Phone</span><span>${escapeHtml(s.phone || '-')}</span></div>
     <div class="detail-row"><span>Email</span><span>${escapeHtml(s.email || '-')}</span></div>
+    <div class="detail-row"><span>Blood Group</span><span>${escapeHtml(s.bloodGroup || '-')}</span></div>
+    <div class="detail-row"><span>CGPA</span><span>${escapeHtml(s.cgpa || '-')}</span></div>
   `;
   modal.classList.remove('hidden');
 }
@@ -304,6 +347,8 @@ function startEdit(id) {
   semSelect.value = s.semester;
   phoneInput.value = s.phone;
   emailInput.value = s.email;
+  bloodSelect.value = s.bloodGroup || '';
+  cgpaInput.value = s.cgpa || '';
   currentPhoto = s.photo || '';
   photoInput.value = '';
   showPreview(currentPhoto);
@@ -342,6 +387,7 @@ photoInput.addEventListener('change', function () {
   });
 });
 filterDept.addEventListener('change', renderTable);
+filterBlood.addEventListener('change', renderTable);
 modalClose.addEventListener('click', function () {
   modal.classList.add('hidden');
 });
@@ -418,6 +464,7 @@ function startApp() {
   clearForm();
   searchInput.value = '';
   filterDept.value = '';
+  filterBlood.value = '';
   loadStudents();
   renderTable();
 }
@@ -510,12 +557,15 @@ const PDF_STYLE = `
   .profile p { margin: 0; color: #64748b; }
   .details td { font-size: 13px; padding: 10px 8px; }
   .details td:first-child { width: 32%; font-weight: 600; color: #475569; }
+  .bl { font-weight: 700; color: #b91c1c; }
 `;
 
 // HTML-এর পাতার কাঠামো বানানোর সাহায্যকারী
-function pdfPage(title, body) {
+function pdfPage(title, body, landscape) {
+  // landscape হলে পাতা আড়াআড়ি হয় (অনেক কলামের তালিকার জন্য)
+  const pageCss = landscape ? '@page { size: A4 landscape; margin: 12mm 12mm 16mm 12mm; }' : '';
   return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(title) +
-         '</title><style>' + PDF_STYLE + '</style></head><body>' + body + '</body></html>';
+         '</title><style>' + PDF_STYLE + pageCss + '</style></head><body>' + body + '</body></html>';
 }
 
 function nowText() {
@@ -529,6 +579,7 @@ function buildListHtml(list) {
   const filters = [];
   if (searchInput.value.trim() !== '') filters.push('Search: "' + escapeHtml(searchInput.value.trim()) + '"');
   if (filterDept.value !== '') filters.push('Department: ' + escapeHtml(filterDept.value));
+  if (filterBlood.value !== '') filters.push('Blood group: ' + escapeHtml(filterBlood.value));
 
   const rows = list.map(function (s, index) {
     const photo = s.photo
@@ -541,6 +592,8 @@ function buildListHtml(list) {
       '<td>' + escapeHtml(s.name) + '</td>' +
       '<td>' + escapeHtml(s.department) + '</td>' +
       '<td>' + escapeHtml(s.semester) + '</td>' +
+      '<td>' + escapeHtml(s.cgpa || '-') + '</td>' +
+      '<td class="bl">' + escapeHtml(s.bloodGroup || '-') + '</td>' +
       '<td>' + escapeHtml(s.phone || '-') + '</td>' +
       '<td>' + escapeHtml(s.email || '-') + '</td>' +
       '</tr>';
@@ -552,9 +605,9 @@ function buildListHtml(list) {
     'Total students: <b>' + list.length + '</b>' +
     (filters.length > 0 ? '<br>Filter: ' + filters.join(', ') : '') + '</div>' +
     '<table><thead><tr><th>#</th><th>Photo</th><th>ID</th><th>Name</th><th>Dept</th>' +
-    '<th>Sem</th><th>Phone</th><th>Email</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    '<th>Sem</th><th>CGPA</th><th>Blood</th><th>Phone</th><th>Email</th></tr></thead><tbody>' + rows + '</tbody></table>';
 
-  return pdfPage('Student List', body);
+  return pdfPage('Student List', body, true);
 }
 
 // একজন স্টুডেন্টের প্রোফাইল PDF
@@ -573,6 +626,8 @@ function buildProfileHtml(s) {
     '<tr><td>Semester</td><td>' + escapeHtml(s.semester) + '</td></tr>' +
     '<tr><td>Phone</td><td>' + escapeHtml(s.phone || '-') + '</td></tr>' +
     '<tr><td>Email</td><td>' + escapeHtml(s.email || '-') + '</td></tr>' +
+    '<tr><td>Blood Group</td><td>' + escapeHtml(s.bloodGroup || '-') + '</td></tr>' +
+    '<tr><td>CGPA</td><td>' + escapeHtml(s.cgpa || '-') + '</td></tr>' +
     '</tbody></table>' +
     '<div class="meta" style="margin-top:20px;">Generated on: ' + nowText() + '</div>';
 

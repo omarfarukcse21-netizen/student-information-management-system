@@ -12,6 +12,32 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.student.management.system');
 }
 
+// স্প্ল্যাশ (লোডিং) স্ক্রিন কমপক্ষে কত মিলিসেকেন্ড দেখাবে (১০০০ = ১ সেকেন্ড)
+// বেশি সময় দেখাতে চাইলে এই সংখ্যা বাড়াও
+const MIN_SPLASH_MS = 2600;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// স্প্ল্যাশ উইন্ডো: বর্ডারহীন, ছোট, মাঝখানে, লোগো ও লোডিং বারসহ
+function createSplash() {
+  const splash = new BrowserWindow({
+    width: 560,
+    height: 380,
+    frame: false,          // ওপরের টাইটেল বার নেই
+    transparent: true,     // কোণা গোল দেখাতে ব্যাকগ্রাউন্ড স্বচ্ছ
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,     // টাস্কবারে আলাদা আইকন দেখাবে না
+    hasShadow: false,
+    show: false,
+    icon: ICON_PATH
+  });
+
+  splash.loadFile('splash.html');
+  splash.once('ready-to-show', () => splash.show());
+  return splash;
+}
+
 // উইন্ডো তৈরির ফাংশন
 function createWindow() {
   const win = new BrowserWindow({
@@ -32,8 +58,43 @@ function createWindow() {
   win.setMenuBarVisibility(false); // উপরের মেনু বার লুকিয়ে রাখা
   win.loadFile('index.html');      // আমাদের HTML পেজটা উইন্ডোতে দেখাবে
 
-  // পেজ পুরো তৈরি হলে তবেই উইন্ডো দেখাবে (ঝলমলে ঝলক এড়াতে)
-  win.once('ready-to-show', () => win.show());
+  return win; // দেখানোর কাজটা নিচের startWithSplash() করবে
+}
+
+// আগে স্প্ল্যাশ দেখায়, মূল উইন্ডো তৈরি হলে এবং নির্ধারিত সময় পার হলে স্প্ল্যাশ বন্ধ করে মূল উইন্ডো খোলে
+async function startWithSplash() {
+  let shownAt = Date.now();
+  const splash = createSplash();
+  const win = createWindow();
+
+  // স্প্ল্যাশ আসলে পর্দায় আসার সময়টা মনে রাখা (সময় এখান থেকেই গোনা হবে)
+  const splashShown = new Promise((resolve) => splash.once('show', () => {
+    shownAt = Date.now();
+    resolve();
+  }));
+  const mainReady = new Promise((resolve) => win.once('ready-to-show', resolve));
+
+  // স্প্ল্যাশ দেখা যাওয়া এবং মূল উইন্ডো তৈরি হওয়া, দুটোর জন্যই অপেক্ষা
+  // (সর্বোচ্চ ১৫ সেকেন্ড, যাতে কখনো আটকে না থাকে)
+  await Promise.race([Promise.all([splashShown, mainReady]), sleep(15000)]);
+
+  // স্প্ল্যাশ পর্দায় আসার পর কমপক্ষে MIN_SPLASH_MS সময় দেখানো
+  const remaining = MIN_SPLASH_MS - (Date.now() - shownAt);
+  if (remaining > 0) await sleep(remaining);
+
+  // স্প্ল্যাশ ধীরে মিলিয়ে বন্ধ করা
+  if (!splash.isDestroyed()) {
+    try {
+      await splash.webContents.executeJavaScript("document.body.classList.add('closing')");
+    } catch (error) { /* সমস্যা হলেও চলবে */ }
+    await sleep(350);
+    if (!splash.isDestroyed()) splash.destroy();
+  }
+
+  if (!win.isDestroyed()) {
+    win.show();
+    win.focus();
+  }
 }
 
 // ===== PDF তৈরি =====
@@ -87,11 +148,14 @@ ipcMain.handle('export-pdf', async function (event, request) {
 
 // Electron তৈরি হলে উইন্ডো খুলবে
 app.whenReady().then(() => {
-  createWindow();
+  startWithSplash();
 
-  // macOS-এর জন্য: উইন্ডো না থাকলে আবার খোলা
+  // macOS-এর জন্য: উইন্ডো না থাকলে আবার খোলা (স্প্ল্যাশ ছাড়া)
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      const win = createWindow();
+      win.once('ready-to-show', () => win.show());
+    }
   });
 });
 
