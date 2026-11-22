@@ -320,7 +320,7 @@ table {
 }
 
 th, td {
-  padding: 12px 10px;
+  padding: 12px 8px;
   text-align: left;
   border-bottom: 1px solid var(--border);
   font-size: 14px;
@@ -338,8 +338,12 @@ tr:hover td {
   background: var(--row-hover);
 }
 
+td:last-child {
+  white-space: nowrap; /* View, Edit, Delete বাটন একই লাইনে থাকবে */
+}
+
 .action-btn {
-  padding: 6px 11px;
+  padding: 6px 10px;
   border: none;
   border-radius: 6px;
   font-size: 12px;

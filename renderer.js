@@ -179,7 +179,7 @@ function updateStats() {
   statTotal.textContent = students.length;
 
   // কয়টি আলাদা ডিপার্টমেন্টে স্টুডেন্ট আছে (Set একই জিনিস দুইবার রাখে না)
-  const deptSet = new Set(students.map(function (s) { return s.department; }));
+  const deptSet = new Set(students.map(function (s) { return s.department; }).filter(Boolean)); // ফাঁকা বাদ
   statDepts.textContent = deptSet.size;
 
   // গড় CGPA (যাদের CGPA দেওয়া আছে শুধু তাদের হিসাবে)
@@ -233,8 +233,8 @@ function renderTable() {
       <td>${photoCell}</td>
       <td>${escapeHtml(s.id)}</td>
       <td>${escapeHtml(s.name)}</td>
-      <td>${escapeHtml(s.department)}</td>
-      <td>${escapeHtml(s.semester)}</td>
+      <td>${escapeHtml(s.department || '-')}</td>
+      <td>${escapeHtml(s.semester || '-')}</td>
       <td>${escapeHtml(s.cgpa || '-')}</td>
       <td>${s.bloodGroup ? '<span class="blood">' + escapeHtml(s.bloodGroup) + '</span>' : '-'}</td>
       <td>${escapeHtml(s.phone || '-')}</td>
@@ -326,8 +326,8 @@ function viewStudent(id) {
     ${photoHtml}
     <div class="detail-row"><span>ID</span><span>${escapeHtml(s.id)}</span></div>
     <div class="detail-row"><span>Name</span><span>${escapeHtml(s.name)}</span></div>
-    <div class="detail-row"><span>Department</span><span>${escapeHtml(s.department)}</span></div>
-    <div class="detail-row"><span>Semester</span><span>${escapeHtml(s.semester)}</span></div>
+    <div class="detail-row"><span>Department</span><span>${escapeHtml(s.department || '-')}</span></div>
+    <div class="detail-row"><span>Semester</span><span>${escapeHtml(s.semester || '-')}</span></div>
     <div class="detail-row"><span>Phone</span><span>${escapeHtml(s.phone || '-')}</span></div>
     <div class="detail-row"><span>Email</span><span>${escapeHtml(s.email || '-')}</span></div>
     <div class="detail-row"><span>Blood Group</span><span>${escapeHtml(s.bloodGroup || '-')}</span></div>
@@ -590,8 +590,8 @@ function buildListHtml(list) {
       '<td>' + photo + '</td>' +
       '<td>' + escapeHtml(s.id) + '</td>' +
       '<td>' + escapeHtml(s.name) + '</td>' +
-      '<td>' + escapeHtml(s.department) + '</td>' +
-      '<td>' + escapeHtml(s.semester) + '</td>' +
+      '<td>' + escapeHtml(s.department || '-') + '</td>' +
+      '<td>' + escapeHtml(s.semester || '-') + '</td>' +
       '<td>' + escapeHtml(s.cgpa || '-') + '</td>' +
       '<td class="bl">' + escapeHtml(s.bloodGroup || '-') + '</td>' +
       '<td>' + escapeHtml(s.phone || '-') + '</td>' +
@@ -622,8 +622,8 @@ function buildProfileHtml(s) {
     '<table class="details"><tbody>' +
     '<tr><td>Student ID</td><td>' + escapeHtml(s.id) + '</td></tr>' +
     '<tr><td>Full Name</td><td>' + escapeHtml(s.name) + '</td></tr>' +
-    '<tr><td>Department</td><td>' + escapeHtml(s.department) + '</td></tr>' +
-    '<tr><td>Semester</td><td>' + escapeHtml(s.semester) + '</td></tr>' +
+    '<tr><td>Department</td><td>' + escapeHtml(s.department || '-') + '</td></tr>' +
+    '<tr><td>Semester</td><td>' + escapeHtml(s.semester || '-') + '</td></tr>' +
     '<tr><td>Phone</td><td>' + escapeHtml(s.phone || '-') + '</td></tr>' +
     '<tr><td>Email</td><td>' + escapeHtml(s.email || '-') + '</td></tr>' +
     '<tr><td>Blood Group</td><td>' + escapeHtml(s.bloodGroup || '-') + '</td></tr>' +
